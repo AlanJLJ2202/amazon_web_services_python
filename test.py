@@ -18,6 +18,7 @@ def read_csv_to_df(bucket, objects):
     return df_all
 
 def write_df_to_s3():
+    
     pass
 
 def return_objects():
