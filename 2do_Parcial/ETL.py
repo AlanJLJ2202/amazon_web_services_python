@@ -52,15 +52,15 @@ class AdaptationLayer():
         #Get all the objects according to the condition given and return them
         objects = [obj for obj in bucket.objects.all() if datetime.strptime(obj.key.split("/")[0], '%Y-%m-%d').date() >= arg_date_dt]
         return objects
-    
-class ApplicationLayer(ETL):
+
+class ETL_S3(ETL):
     def __init__(self, bucket_name, bucket_target_name, arg_date):
         self.__s3 = boto3.resource('s3')
         self.__bucket = self.__s3.Bucket(bucket_name)
         self.__bucket_target = self.__s3.Bucket(bucket_target_name)
         self.arg_date_dt = datetime.strptime(arg_date, '%Y-%m-%d').date() - timedelta(days=1)
         self.__ap = AdaptationLayer()
-
+    
     def extract(self):
         print("extract")
         objects = self.__ap.return_objects(self.__bucket, self.arg_date_dt)
@@ -68,7 +68,31 @@ class ApplicationLayer(ETL):
         df_all = self.__ap.read_csv_to_df(self.__bucket, objects)
         print("fin extract")
         return df_all
+    
+    def transform(self):
+        pass
+    
+    def load_report(self, df_all):
+        print("load")
+        #Generate a key to save the dataframe
+        key = 'xetra_daily_report_' + datetime.today().strftime("%Y%m%d_%H%M%S") + '.parquet'
+        
+        #Write the file in the cloud
+        self.__ap.write_df_to_s3(df_all, key, self.__bucket_target)
+        print("end load")
+        pass
 
+    def etl_report(self):
+        print("etl")
+        target_objects = [obj for obj in self.__bucket_target.objects.all()]
+        prq_obj = self.__bucket_target.Object(key=target_objects[-1].key).get().get('Body').read()
+        data = BytesIO(prq_obj)
+        df_report = pd.read_parquet(data)
+        
+        return df_report
+
+class ApplicationLayer(ETL_S3):
+    
     def transform_report(self, df_all):
         print("transform")
         df_all.dropna(inplace=True)
@@ -88,31 +112,14 @@ class ApplicationLayer(ETL):
         print("fin transform")
         return df_all
 
-    def load_report(self, df_all):
-        print("load")
-        #Generate a key to save the dataframe
-        key = 'xetra_daily_report_' + datetime.today().strftime("%Y%m%d_%H%M%S") + '.parquet'
-        
-        #Write the file in the cloud
-        self.__ap.write_df_to_s3(df_all, key, self.__bucket_target)
-        print("end load")
-        pass
     
-    def etl_report(self):
-        print("etl")
-        target_objects = [obj for obj in self.__bucket_target.objects.all()]
-        prq_obj = self.__bucket_target.Object(key=target_objects[-1].key).get().get('Body').read()
-        data = BytesIO(prq_obj)
-        df_report = pd.read_parquet(data)
-        
-        return df_report
-
 al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-cdhm')
-#df = al.extract()
-#transformed_data = al.transform_report(df_all=df)
-
+df = al.extract()
+print(df)
+transformed_data = al.transform_report(df_all=df)
+print(transformed_data)
 #al.load_report(df_all=transformed_data)
-report = al.etl_report()
-print(report)
+#report = al.etl_report()
+#print(report)
 
 
