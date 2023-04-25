@@ -4,6 +4,9 @@ import numpy as np
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM
 
 class ETL:
     def extract(self):
@@ -96,7 +99,7 @@ class ApplicationLayer(ETL_S3):
     def transform_report(self, df_all):
         print("transform")
         df_all.dropna(inplace=True)
-    
+
         df_all['start_price'] = df_all.sort_values(by=['Time']).groupby(['ISIN', 'Date'])['StartPrice'].transform('first')
 
         df_all['end_price'] = df_all.sort_values(by=['Time']).groupby(['ISIN', 'Date'])['EndPrice'].transform('last')
@@ -111,13 +114,125 @@ class ApplicationLayer(ETL_S3):
         
         print("fin transform")
         return df_all
+    
+
+class NeuralNetwork():
+    def __init__(self, dataframe):
+        self.dataframe = dataframe
 
     
-al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-cdhm')
+    def run(self):
+
+        # Seleccionar el activo que se desea predecir
+        activo = 'AT000000STR1'
+
+        df_activo = self.dataframe[self.dataframe['ISIN'] == activo].reset_index(drop=True)
+
+        # Seleccionar columnas relevantes
+        df_activo = df_activo[['Date', 'end_price']]
+
+        # Establecer fecha como índice
+        df_activo.set_index('Date', inplace=True)
+
+        # Escalar datos
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaled_data = scaler.fit_transform(df_activo)
+
+        # Dividir datos en entrenamiento y prueba
+        train_data = scaled_data[:int(len(df_activo)*0.8), :]
+        test_data = scaled_data[int(len(df_activo)*0.8):, :]
+
+        # Dividir datos en entradas y etiquetas
+        def create_dataset(data, time_step=1):
+            X, Y = [], []
+            for i in range(len(data)-time_step-1):
+                a = data[i:(i+time_step), 0]
+                X.append(a)
+                Y.append(data[i+time_step, 0])
+            return np.array(X), np.array(Y)
+
+        time_step = 10
+        X_train, Y_train = create_dataset(train_data, time_step)
+        X_test, Y_test = create_dataset(test_data, time_step)
+
+        # Reestructurar datos para LSTM
+        X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+        X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+
+        # Crear modelo LSTM
+        model = Sequential()
+        model.add(LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], 1)))
+        model.add(LSTM(50, return_sequences=True))
+        model.add(LSTM(50))
+        model.add(Dense(1))
+        model.compile(loss='mean_squared_error', optimizer='adam')
+
+        # Entrenar modelo
+        model.fit(X_train, Y_train, validation_data=(X_test, Y_test), epochs=100, batch_size=64, verbose=1)
+
+        # Realizar predicciones
+        train_predict = model.predict(X_train)
+        test_predict = model.predict(X_test)
+
+        # Invertir escala de datos para obtener valores reales
+        train_predict = scaler.inverse_transform(train_predict)
+        Y_train = scaler.inverse_transform([Y_train])
+        test_predict = scaler.inverse_transform(test_predict)
+        Y_test = scaler.inverse_transform([Y_test])
+
+        # Calcular errores de entrenamiento y prueba
+        train_error = np.sqrt(np.mean(np.power((Y_train-train_predict), 2)))
+        test_error = np.sqrt(np.mean(np.power((Y_test-test_predict), 2)))
+
+        print("Error de entrenamiento:", train_error)
+        print("Error de prueba:", test_error)
+
+        # Hacer predicciones a una semana
+        x_input = test_data[-time_step:, 0]
+        x_input = x_input.reshape(1, -1)
+        x_input = scaler.transform(x_input)
+        temp_input = list(x_input)
+        temp_input = temp_input[0].tolist()
+
+        prediccion = []
+        dias_a_predecir = 7
+
+        for i in range(dias_a_predecir):
+            if len(temp_input) > time_step:
+                temp_input = temp_input[1:]
+            x_input = np.array(temp_input)
+            x_input = x_input.reshape(1, -1)
+            x_input = x_input.reshape((1, time_step, 1))
+            yhat = model.predict(x_input, verbose=0)
+            temp_input.append(yhat[0, 0])
+            prediccion.append(yhat[0, 0])
+
+        # Escalar de vuelta los valores de predicción
+        prediccion = np.array(prediccion)
+        prediccion = prediccion.reshape(-1, 1)
+        prediccion = scaler.inverse_transform(prediccion)
+
+        # Imprimir las predicciones
+        print("Predicciones para la próxima semana:")
+        for i in range(len(prediccion)):
+            print(f"Día {i+1}: {prediccion[i][0]:.2f}")
+
+    
+    
+
+
+    
+al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-ajlj')
 df = al.extract()
 print(df)
 transformed_data = al.transform_report(df_all=df)
 print(transformed_data)
+
+neuronal_network_test = NeuralNetwork(dataframe=transformed_data)
+print(neuronal_network_test.run())
+
+
+
 #al.load_report(df_all=transformed_data)
 #report = al.etl_report()
 #print(report)
