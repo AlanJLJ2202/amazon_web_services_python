@@ -5,8 +5,8 @@ from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
 
 class ETL:
     def extract(self):
@@ -26,10 +26,8 @@ class AdaptationLayer():
         csv_obj_init = bucket.Object(key=objects[0].key).get().get('Body').read().decode('utf-8')
         data = StringIO(csv_obj_init)
         df_init = pd.read_csv(data, delimiter=',')
-        
         #Create a dataframe with the columns of the objects
         df_all = pd.DataFrame(columns=df_init.columns)
-        
         #Concat the objects to the dataframe with the columns
         for obj in objects:
             csv_obj = bucket.Object(key=obj.key).get().get('Body').read().decode('utf-8')
@@ -43,10 +41,8 @@ class AdaptationLayer():
     
         #Create the buffer to store the dataframe
         out_buffer = BytesIO()
-        
         #Create a .parquet file
         df_all.to_parquet(out_buffer, index=False)
-        
         #Upload the file to the bucket with the key and the .parquet file stored in the buffer
         bucket_target.put_object(Body=out_buffer.getvalue(), Key=key)
         pass
@@ -117,8 +113,8 @@ class ApplicationLayer(ETL_S3):
     
 
 class NeuralNetwork():
-    def __init__(self, dataframe):
-        self.dataframe = dataframe
+    #def __init__(self, dataframe):
+        #self.dataframe = dataframe
 
     
     def run(self):
@@ -126,18 +122,16 @@ class NeuralNetwork():
         # Seleccionar el activo que se desea predecir
         activo = 'AT000000STR1'
 
-        df_activo = self.dataframe[self.dataframe['ISIN'] == activo].reset_index(drop=True)
+        df = pd.read_csv('transformed_data.csv')
 
+        df_activo = df[df['ISIN'] == activo].reset_index(drop=True)
         # Seleccionar columnas relevantes
         df_activo = df_activo[['Date', 'end_price']]
-
         # Establecer fecha como índice
         df_activo.set_index('Date', inplace=True)
-
         # Escalar datos
         scaler = MinMaxScaler(feature_range=(0, 1))
         scaled_data = scaler.fit_transform(df_activo)
-
         # Dividir datos en entrenamiento y prueba
         train_data = scaled_data[:int(len(df_activo)*0.8), :]
         test_data = scaled_data[int(len(df_activo)*0.8):, :]
@@ -156,7 +150,7 @@ class NeuralNetwork():
         X_test, Y_test = create_dataset(test_data, time_step)
 
         # Reestructurar datos para LSTM
-        X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+        X_train = X_train.reshape(X_train.shape[0], time_step, 1)
         X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
 
         # Crear modelo LSTM
@@ -222,19 +216,17 @@ class NeuralNetwork():
 
 
     
-al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-ajlj')
-df = al.extract()
-print(df)
-transformed_data = al.transform_report(df_all=df)
-print(transformed_data)
+#al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-ajlj')
+#df = al.extract()
+#print(df)
+#transformed_data = al.transform_report(df_all=df)
+#print(transformed_data)
 
-neuronal_network_test = NeuralNetwork(dataframe=transformed_data)
-print(neuronal_network_test.run())
-
-
+#transformed_data.to_csv('transformed_data.csv', index=False)
 
 #al.load_report(df_all=transformed_data)
 #report = al.etl_report()
 #print(report)
 
-
+neuronal_network_test = NeuralNetwork()
+print(neuronal_network_test.run())
