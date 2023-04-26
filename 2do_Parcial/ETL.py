@@ -5,8 +5,8 @@ from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
 
 class ETL:
     def extract(self):
@@ -228,8 +228,8 @@ print(df)
 transformed_data = al.transform_report(df_all=df)
 print(transformed_data)
 
-neuronal_network_test = NeuralNetwork(dataframe=transformed_data)
-print(neuronal_network_test.run())
+#neuronal_network_test = NeuralNetwork(dataframe=transformed_data)
+#print(neuronal_network_test.run())
 
 
 
