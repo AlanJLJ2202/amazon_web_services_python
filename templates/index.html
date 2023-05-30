@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Carga de Archivo CSV</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            text-align: center;
+            margin-top: 30px;
+        }
+        input[type="file"] {
+            padding: 10px;
+            margin-right: 10px;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .footer{
+            background-color: green;
+        }
+        .center{
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Carga de Archivo CSV</h1>
+    <form method="post" enctype="multipart/form-data">
+        <input type="file" name="archivo" accept=".csv" required>
+        <input name="nu" required>
+        <input type="submit" value="Cargar">
+    </form>
+    <div class="footer">
+        <h1>Miembros del equipo</h1>
+        <div class="center">
+            <ul>
+                <li>Jordan Guillermo Avila Gomez</li>
+                <li>Carlos Daniel Hernandez Mojica</li>
+                <li>Alan Jesús López Jacinto</li>
+            </ul>
+        </div>
+        
+    </div>
+</body>
+</html>

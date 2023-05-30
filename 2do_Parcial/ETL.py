@@ -216,17 +216,17 @@ class NeuralNetwork():
 
 
     
-#al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-ajlj')
-#df = al.extract()
-#print(df)
-#transformed_data = al.transform_report(df_all=df)
-#print(transformed_data)
+al = ApplicationLayer(arg_date='2022-12-31', bucket_name='xetra-1234', bucket_target_name='xetra-ajlj')
+df = al.extract()
+print(df)
+transformed_data = al.transform_report(df_all=df)
+print(transformed_data)
 
-#transformed_data.to_csv('transformed_data.csv', index=False)
+transformed_data.to_csv('transformed_data.csv', index=False)
 
-#al.load_report(df_all=transformed_data)
-#report = al.etl_report()
-#print(report)
+al.load_report(df_all=transformed_data)
+report = al.etl_report()
+print(report)
 
 neuronal_network_test = NeuralNetwork()
 print(neuronal_network_test.run())

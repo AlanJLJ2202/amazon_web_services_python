@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resultados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 30px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- <h1>Resultados de Detección de Anomalías</h1>
+    <ul>
+        {% for price in anomaly_prices %}
+        <li>{{ price }}</li>
+        {% endfor %}
+    </ul> -->
+
+
+    <!-- Agregar esta sección dentro del <body> -->
+    <h2>Gráfico de Anomalías</h2>
+    <img src="data:image/png;base64,{{ anomaly_img_base64 }}" alt="Gráfico de Anomalías">
+
+
+    <h2>Gráfico de predicciones (Series de tiempo)</h2>
+    <img src="data:image/png;base64,{{ predictions_img_base64 }}" alt="Gráfico de Tiempo">
+
+
+    <h2>Predicción</h2>
+    <img src="data:image/png;base64,{{ only_predictions_img_base64 }}" alt="Gráfico de Tiempo">
+</body>
+</html>
