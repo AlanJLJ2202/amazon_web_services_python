@@ -6,6 +6,8 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            background-color: #007bff;
+
         }
         h1 {
             text-align: center;
@@ -26,10 +28,31 @@
             cursor: pointer;
         }
         .footer{
-            background-color: green;
         }
         .center{
             display: block;
+        }
+        .center {
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+            color: rgb(0, 0, 0);
+            padding: 20px;
+        }
+        .footer {
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .team-members {
+            list-style: none;
+            padding: 0;
+            text-align: center;
+        }
+        .team-members li {
+            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -42,7 +65,7 @@
         <input type="submit" value="Cargar">
     </form>
     <div class="footer">
-        <h1>Miembros del equipo</h1>
+        <h1 class="team-members">Miembros del equipo</h1>
         <div class="center">
             <ul>
                 <li>Jordan Guillermo Avila Gomez</li>
