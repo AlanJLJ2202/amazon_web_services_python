@@ -4,28 +4,32 @@ import numpy as np
 from sklearn.svm import OneClassSVM
 from statsmodels.tsa.arima.model import ARIMA
 
-
-
+# Leer los datos del archivo CSV
 import matplotlib
-matplotlib.use('Agg')  # Establecer el backend de Matplotlib en 'Agg'
-
 import matplotlib.pyplot as plt
-
-
 import io
 import base64
+
+matplotlib.use('Agg')  # Establecer el backend de Matplotlib en 'Agg'
 
 app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        
+
+        # Obtener el archivo cargado desde el formulario
+        archivo = request.files['archivo']
+
+        # Leer los datos del archivo CSV
+        data = pd.read_csv(archivo)
+        dias = int(request.form['dias'])
+
         # Predicciones de la serie de tiempo ARIMA
         time_series = data['Close']
         model = ARIMA(time_series, order=(1, 0, 1))
         model_fit = model.fit()
-        predictions = model_fit.predict(start=len(time_series), end=len(time_series)+5)
+        predictions = model_fit.predict(start=len(time_series), end=len(time_series)+dias)
 
         plt.figure(figsize=(10, 6))
         plt.plot(range(len(data), len(data) + len(predictions)), predictions, label='Predicciones')
@@ -58,16 +62,10 @@ def home():
 
         #------------------------------------------------------------------------------------------------------
 
-        # Obtener el archivo cargado desde el formulario
-        archivo = request.files['archivo']
-
+        #Obtener el umbral de la solicitud
         umbral = float(request.form['nu'])
 
-        # Leer los datos del archivo CSV
-        data = pd.read_csv(archivo)
-
         # Seleccionar las columnas de interés
-        #X = data[['start_price', 'end_price', 'maximum_price', 'minimum_price']]
         X = data['Close'].values.reshape(-1, 1)
 
         # Crear el modelo de detección de anomalías (One-Class SVM)
@@ -105,6 +103,7 @@ def home():
                                 anomaly_img_base64=anomaly_img_base64, 
                                 predictions_img_base64=predictions_img_base64, 
                                 only_predictions_img_base64=only_predictions_img_base64)
+
 
     # Si la solicitud es GET, renderizar el formulario de carga de archivo
     return render_template('index.html')

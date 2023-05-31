@@ -37,7 +37,8 @@
     <h1>Carga de Archivo CSV</h1>
     <form method="post" enctype="multipart/form-data">
         <input type="file" name="archivo" accept=".csv" required>
-        <input name="nu" required>
+        <input type="number" name="dias" placeholder="Días" required>
+        <input name="nu" placeholder="Umbral" required>
         <input type="submit" value="Cargar">
     </form>
     <div class="footer">
