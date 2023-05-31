@@ -20,6 +20,44 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
+        
+        # Predicciones de la serie de tiempo ARIMA
+        time_series = data['Close']
+        model = ARIMA(time_series, order=(1, 0, 1))
+        model_fit = model.fit()
+        predictions = model_fit.predict(start=len(time_series), end=len(time_series)+5)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(data), len(data) + len(predictions)), predictions, label='Predicciones')
+
+        # Agregar etiquetas a las predicciones por día
+        for i, pred in enumerate(predictions):
+            plt.text(len(data) + i, pred, f'{pred:.2f}', ha='center', va='bottom')
+
+        # Guardar el gráfico de predicciones en un objeto BytesIO
+        only_predictions_img = io.BytesIO()
+        plt.savefig(only_predictions_img, format='png')
+        only_predictions_img.seek(0)
+
+        # Generar el código base64 de la imagen de predicciones
+        only_predictions_img_base64 = base64.b64encode(only_predictions_img.getvalue()).decode()
+
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(data)), data['Close'], label='Datos')
+        plt.plot(range(len(data), len(data) + len(predictions)), predictions, label='Predicciones')
+
+        # Guardar el gráfico de predicciones en un objeto BytesIO
+        predictions_img = io.BytesIO()
+        plt.savefig(predictions_img, format='png')
+        predictions_img.seek(0)
+
+        # Generar el código base64 de la imagen de predicciones
+        predictions_img_base64 = base64.b64encode(predictions_img.getvalue()).decode()
+
+
+        #------------------------------------------------------------------------------------------------------
+
         # Obtener el archivo cargado desde el formulario
         archivo = request.files['archivo']
 
@@ -60,44 +98,13 @@ def home():
         # Generar el código base64 de la imagen
         anomaly_img_base64 = base64.b64encode(img.getvalue()).decode()
 
-                
-        # Predicciones de la serie de tiempo ARIMA
-        time_series = data['Close']
-        model = ARIMA(time_series, order=(1, 0, 1))
-        model_fit = model.fit()
-        predictions = model_fit.predict(start=len(time_series), end=len(time_series)+5)
-
-        plt.figure(figsize=(10, 6))
-        plt.plot(range(len(data), len(data) + len(predictions)), predictions, label='Predicciones')
-
-        # Agregar etiquetas a las predicciones por día
-        for i, pred in enumerate(predictions):
-            plt.text(len(data) + i, pred, f'{pred:.2f}', ha='center', va='bottom')
-
-        # Guardar el gráfico de predicciones en un objeto BytesIO
-        only_predictions_img = io.BytesIO()
-        plt.savefig(only_predictions_img, format='png')
-        only_predictions_img.seek(0)
-
-        # Generar el código base64 de la imagen de predicciones
-        only_predictions_img_base64 = base64.b64encode(only_predictions_img.getvalue()).decode()
-
-
-        plt.figure(figsize=(10, 6))
-        plt.plot(range(len(data)), data['Close'], label='Datos')
-        plt.plot(range(len(data), len(data) + len(predictions)), predictions, label='Predicciones')
-
-        # Guardar el gráfico de predicciones en un objeto BytesIO
-        predictions_img = io.BytesIO()
-        plt.savefig(predictions_img, format='png')
-        predictions_img.seek(0)
-
-        # Generar el código base64 de la imagen de predicciones
-        predictions_img_base64 = base64.b64encode(predictions_img.getvalue()).decode()
         
-
-        # Renderizar el template HTML y pasar los datos y la imagen a la vista
-        return render_template('result.html', anomaly_prices=anomaly_prices, anomaly_img_base64=anomaly_img_base64, predictions_img_base64=predictions_img_base64, only_predictions_img_base64=only_predictions_img_base64)
+        # Renderizar el template HTML y pasar los datos y las imágenes a la vista
+        return render_template('result.html',
+                                anomaly_prices=anomaly_prices, 
+                                anomaly_img_base64=anomaly_img_base64, 
+                                predictions_img_base64=predictions_img_base64, 
+                                only_predictions_img_base64=only_predictions_img_base64)
 
     # Si la solicitud es GET, renderizar el formulario de carga de archivo
     return render_template('index.html')
